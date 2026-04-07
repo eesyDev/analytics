@@ -1,9 +1,8 @@
 import streamlit as st
 import plotly.express as px
 
-
-def render(countries, top_country):
-    st.markdown('<div class="section-header">🌍 Geographic Performance</div>', unsafe_allow_html=True)
+def render(countries, top_country, _):
+    st.markdown(f'<div class="section-header">{_("🌍 Geographic Performance")}</div>', unsafe_allow_html=True)
 
     countries_top = countries.nlargest(10, "Clicks").copy()
 
@@ -12,14 +11,14 @@ def render(countries, top_country):
         fig = px.bar(
             countries_top, x="Country", y="Clicks",
             color="CTR", color_continuous_scale="RdYlGn",
-            title="Top 10 countries — color = CTR%", text="Clicks",
+            title=_("Top 10 countries — color = CTR%"), text="Clicks",
         )
         fig.update_traces(textposition="outside")
         fig.update_layout(height=360, margin=dict(t=40, b=10), plot_bgcolor="white")
         st.plotly_chart(fig, use_container_width=True)
 
     with col_geo2:
-        st.markdown("**Country CTR breakdown**")
+        st.markdown(_("**Country CTR breakdown**"))
         st.dataframe(
             countries_top[["Country", "Clicks", "Impressions", "CTR", "Position"]]
             .style
@@ -35,9 +34,8 @@ def render(countries, top_country):
         if top_pct > 75 and len(high_ctr) > 0:
             names = ", ".join(high_ctr["Country"].tolist())
             st.markdown(
-                f'<div class="alert-amber">'
-                f"<strong>{top_country['Country']} drives {top_pct:.0f}% of clicks.</strong> "
-                f"Markets with above-average CTR: <strong>{names}</strong> — "
-                "geo-targeted content may unlock disproportionate growth here.</div>",
+                f'<div class="alert-amber">' +
+                _("**{c} drives {pct:.0f}% of clicks.** Markets with above-average CTR: **{names}** — geo-targeted content may unlock disproportionate growth here.", c=top_country["Country"], pct=top_pct, names=names) +
+                '</div>',
                 unsafe_allow_html=True,
             )

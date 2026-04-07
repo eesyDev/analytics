@@ -3,18 +3,17 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-
-def render(chart, prev_chart, query_movers, page_movers):
-    st.markdown('<div class="section-header">📈 Traffic Trend</div>', unsafe_allow_html=True)
+def render(chart, prev_chart, query_movers, page_movers, _):
+    st.markdown(f'<div class="section-header">{_("📈 Traffic Trend")}</div>', unsafe_allow_html=True)
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(
-        go.Bar(x=chart["Date"], y=chart["Clicks"], name="Clicks",
+        go.Bar(x=chart["Date"], y=chart["Clicks"], name=_("Clicks"),
                marker_color="#1565c0", opacity=0.8),
         secondary_y=False,
     )
     fig.add_trace(
-        go.Scatter(x=chart["Date"], y=chart["Impressions"], name="Impressions",
+        go.Scatter(x=chart["Date"], y=chart["Impressions"], name=_("Impressions"),
                    line=dict(color="#ff6b35", width=2), mode="lines+markers"),
         secondary_y=True,
     )
@@ -24,33 +23,31 @@ def render(chart, prev_chart, query_movers, page_movers):
         hovermode="x unified",
         plot_bgcolor="white", paper_bgcolor="white",
     )
-    fig.update_yaxes(title_text="Clicks",      secondary_y=False, gridcolor="#f0f0f0")
-    fig.update_yaxes(title_text="Impressions", secondary_y=True)
+    fig.update_yaxes(title_text=_("Clicks"),      secondary_y=False, gridcolor="#f0f0f0")
+    fig.update_yaxes(title_text=_("Impressions"), secondary_y=True)
     st.plotly_chart(fig, use_container_width=True)
 
-    # Period comparison — only shown when previous data is loaded
     if prev_chart is None and query_movers is None and page_movers is None:
         return
 
-    st.markdown('<div class="section-header">📊 Period-over-Period Comparison</div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="section-header">{_("📊 Period-over-Period Comparison")}</div>', unsafe_allow_html=True)
 
     if prev_chart is not None:
         fig_cmp = go.Figure()
         fig_cmp.add_trace(go.Scatter(
             x=list(range(len(chart))), y=chart["Clicks"],
-            name="Current period", line=dict(color="#1565c0", width=2),
+            name=_("Current period"), line=dict(color="#1565c0", width=2),
             mode="lines+markers",
         ))
         fig_cmp.add_trace(go.Scatter(
             x=list(range(len(prev_chart))), y=prev_chart["Clicks"],
-            name="Previous period", line=dict(color="#bdbdbd", width=2, dash="dash"),
+            name=_("Previous period"), line=dict(color="#bdbdbd", width=2, dash="dash"),
             mode="lines+markers",
         ))
         fig_cmp.update_layout(
             height=280, margin=dict(t=10, b=10),
             hovermode="x unified", plot_bgcolor="white",
-            xaxis_title="Day", yaxis_title="Clicks",
+            xaxis_title=_("Day"), yaxis_title=_("Clicks"),
             legend=dict(orientation="h", y=1.15),
         )
         fig_cmp.update_xaxes(gridcolor="#f0f0f0")
@@ -60,7 +57,7 @@ def render(chart, prev_chart, query_movers, page_movers):
     if query_movers is not None:
         col_gain, col_lose = st.columns(2)
         with col_gain:
-            st.markdown("**Top growing queries**")
+            st.markdown(_("**Top growing queries**"))
             gainers = (
                 query_movers[query_movers["Clicks_delta"] > 0]
                 .nlargest(10, "Clicks_delta")
@@ -75,7 +72,7 @@ def render(chart, prev_chart, query_movers, page_movers):
                 use_container_width=True, height=340,
             )
         with col_lose:
-            st.markdown("**Top declining queries**")
+            st.markdown(_("**Top declining queries**"))
             losers = (
                 query_movers[query_movers["Clicks_delta"] < 0]
                 .nsmallest(10, "Clicks_delta")
@@ -91,7 +88,7 @@ def render(chart, prev_chart, query_movers, page_movers):
             )
 
     if page_movers is not None:
-        st.markdown("**Page movers**")
+        st.markdown(_("**Page movers**"))
         pm = (
             page_movers.assign(
                 Label=page_movers["Page"]
@@ -108,7 +105,7 @@ def render(chart, prev_chart, query_movers, page_movers):
             color="Clicks_delta",
             color_continuous_scale="RdYlGn",
             color_continuous_midpoint=0,
-            title="Click change vs previous period",
+            title=_("Click change vs previous period"),
             height=440,
         )
         fig_pm.update_layout(
@@ -127,11 +124,11 @@ def render(chart, prev_chart, query_movers, page_movers):
         col_new, col_lost = st.columns(2)
         with col_new:
             if len(new_q) > 0:
-                st.markdown("**New queries this period**")
+                st.markdown(_("**New queries this period**"))
                 st.dataframe(new_q.reset_index(drop=True),
                              use_container_width=True, hide_index=True)
         with col_lost:
             if len(lost_q) > 0:
-                st.markdown("**Queries that dropped out**")
+                st.markdown(_("**Queries that dropped out**"))
                 st.dataframe(lost_q.reset_index(drop=True),
                              use_container_width=True, hide_index=True)

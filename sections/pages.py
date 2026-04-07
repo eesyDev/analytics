@@ -1,10 +1,8 @@
 import streamlit as st
 import plotly.express as px
 
-
-def render(pages):
-    st.markdown('<div class="section-header">📄 Top Pages — Performance & Type</div>',
-                unsafe_allow_html=True)
+def render(pages, _):
+    st.markdown(f'<div class="section-header">{_("📄 Top Pages — Performance & Type")}</div>', unsafe_allow_html=True)
 
     pages_top = pages.nlargest(20, "Clicks").copy()
     pages_top["Label"] = (
@@ -22,7 +20,7 @@ def render(pages):
                 "Informational / Blog": "#d32f2f",
                 "Product / Category":   "#388e3c",
             },
-            title="Top 20 pages — red = informational/blog",
+            title=_("Top 20 pages — red = informational/blog"),
             text="Clicks", height=560,
         )
         fig.update_layout(
@@ -35,7 +33,7 @@ def render(pages):
         st.plotly_chart(fig, use_container_width=True)
 
     with col_p2:
-        st.markdown("**CTR & Position for top pages**")
+        st.markdown(_("**CTR & Position for top pages**"))
         st.dataframe(
             pages_top[["Label", "Clicks", "CTR", "Position"]]
             .sort_values("Clicks", ascending=False)
