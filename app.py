@@ -177,8 +177,18 @@ info_terms  = [t.strip().lower() for t in info_raw.split("\n")  if t.strip()]
 blog_kws    = [t.strip().lower() for t in blog_kw_raw.split("\n") if t.strip()]
 
 
+_COMMERCIAL_SIGNALS = [
+    "buy", "price", "cost", "for sale", "shop", "order", "purchase",
+    "quote", "dealer", "supplier", "wholesale", "oem", "cheap", "best",
+    "top", "review", "vs", "compare", "compatible", "attachment",
+    "kit", "part", "replace", "install", "near me", "shipping",
+]
+
 def classify_intent(q: str) -> str:
     q = str(q).lower()
+    # Commercial signals take priority — even if query also contains info words
+    if any(c in q for c in _COMMERCIAL_SIGNALS):
+        return "Commercial / Product"
     if brand_terms and any(b in q for b in brand_terms):
         return "Brand"
     if any(i in q for i in info_terms):
@@ -198,25 +208,34 @@ pages["Type"]     = pages["Page"].apply(tag_page)
 
 
 # ── CTR benchmark & opportunity scoring ───────────────────────────────────────
+# Non-brand benchmark (Backlinko / Advanced Web Ranking)
 _CTR_BENCH = {
-    1: 28.5, 2: 15.7, 3: 11.0, 4: 8.0,  5: 7.2,
-    6: 5.1,  7: 4.0,  8: 3.2,  9: 2.8,  10: 2.5,
+    1: 28.5, 2: 15.7, 3: 11.0, 4: 8.0, 5: 7.2,
+    6: 5.1,  7: 4.0,  8: 3.2,  9: 2.8, 10: 2.5,
+}
+# Brand benchmark — brand queries convert clicks at much higher rate
+_CTR_BENCH_BRAND = {
+    1: 42.0, 2: 28.0, 3: 18.0, 4: 12.0, 5: 9.0,
+    6: 6.5,  7: 5.0,  8: 4.0,  9: 3.5,  10: 3.0,
 }
 
 
-def expected_ctr(pos) -> float:
+def expected_ctr(pos, intent: str = "") -> float:
     try:
         p = max(1, int(round(float(pos))))
     except (ValueError, TypeError):
         return 0.3
+    bench = _CTR_BENCH_BRAND if intent == "Brand" else _CTR_BENCH
     if p <= 10:
-        return _CTR_BENCH[p]
+        return bench[p]
     if p <= 20:
-        return 1.0
-    return 0.3
+        return 1.5 if intent == "Brand" else 1.0
+    return 0.5 if intent == "Brand" else 0.3
 
 
-queries["Expected CTR"]      = queries["Position"].apply(expected_ctr)
+queries["Expected CTR"] = queries.apply(
+    lambda r: expected_ctr(r["Position"], r["Intent"]), axis=1
+)
 queries["CTR Gap"]           = (queries["Expected CTR"] - queries["CTR"]).round(2)
 queries["Opportunity Score"] = (
     (queries["Impressions"] * queries["CTR Gap"]) / 100
@@ -288,6 +307,43 @@ date_range = (
 )
 
 top_country = countries.nlargest(1, "Clicks").iloc[0] if len(countries) > 0 else None
+
+# ── Query length analysis ─────────────────────────────────────────────────────
+queries["Word Count"] = queries["Query"].str.split().str.len()
+queries["Length Group"] = pd.cut(
+    queries["Word Count"],
+    bins=[0, 1, 2, 3, 4, 99],
+    labels=["1 word", "2 words", "3 words", "4 words", "5+ words"],
+)
+length_summary = (
+    queries.groupby("Length Group", observed=True)
+    .agg(
+        Queries=("Query",       "count"),
+        Impressions=("Impressions", "sum"),
+        Clicks=("Clicks",      "sum"),
+        Avg_Position=("Position",   "mean"),
+        Avg_CTR=("CTR",        "mean"),
+    )
+    .reset_index()
+)
+length_summary["CTR"] = length_summary["Avg_CTR"].round(2)
+length_summary["Position"] = length_summary["Avg_Position"].round(1)
+
+# ── Featured snippet opportunities ────────────────────────────────────────────
+# Queries ranking 2–5 with informational intent: prime candidates for answer boxes
+snippet_opps = (
+    queries[
+        (queries["Position"] >= 2) &
+        (queries["Position"] <= 5) &
+        (queries["Intent"] == "Informational") &
+        (queries["Impressions"] >= 10)
+    ]
+    .sort_values("Impressions", ascending=False)
+    .head(20)
+    [["Query", "Position", "Impressions", "Clicks", "CTR", "Expected CTR"]]
+    .reset_index(drop=True)
+)
+snippet_opps.index += 1
 
 
 # ── Period-over-period deltas ─────────────────────────────────────────────────
@@ -385,11 +441,74 @@ st.markdown(
     f" &nbsp;|&nbsp; **Queries analyzed:** {len(queries):,}",
     unsafe_allow_html=True,
 )
+
+# ── TL;DR Executive Card ──────────────────────────────────────────────────────
+with st.expander("📋 TL;DR — Executive Summary (click to expand)", expanded=True):
+    tldr_problems = []
+    tldr_actions  = []
+
+    if zero_click_imp > 0:
+        tldr_problems.append(
+            f"**{zero_click_imp:,} impressions** go to waste — site ranks but users don't click "
+            f"(CTR below benchmark on {int((queries['Clicks']==0).sum())} queries)"
+        )
+        tldr_actions.append(
+            f"Rewrite title tags for top {min(10, int((queries['Clicks']==0).sum()))} zero-click queries "
+            f"→ est. **+{int(total_opportunity * 0.3):,} clicks/period** at zero cost"
+        )
+
+    if blog_pct > 50:
+        tldr_problems.append(
+            f"**{blog_pct:.0f}% of clicks** land on blog/informational pages with no purchase path"
+        )
+        tldr_actions.append(
+            "Add product CTAs to every blog post → convert existing traffic without new content"
+        )
+
+    if mobile_pos is not None and desktop_pos is not None and (desktop_pos - mobile_pos) > 1.5:
+        tldr_problems.append(
+            f"Desktop ranks at **position {desktop_pos:.1f}** vs mobile **{mobile_pos:.1f}** "
+            "— B2B buyers can't find the site"
+        )
+        tldr_actions.append(
+            "Run desktop technical SEO audit (Core Web Vitals, structured data) → close position gap"
+        )
+
+    if len(snippet_opps) > 0:
+        tldr_actions.append(
+            f"**{len(snippet_opps)} featured snippet opportunities** identified (pos 2–5, informational) "
+            "→ format as Q&A / bullet lists to capture answer boxes"
+        )
+
+    if cannibal_issues is not None and len(cannibal_issues) > 0:
+        tldr_problems.append(
+            f"**{len(cannibal_issues)} cannibalizing queries** — multiple pages competing, splitting authority"
+        )
+
+    col_p, col_a = st.columns(2)
+    with col_p:
+        st.markdown("**🔴 Top Problems**")
+        for i, p in enumerate(tldr_problems[:3], 1):
+            st.markdown(f"{i}. {p}")
+        if not tldr_problems:
+            st.markdown("No critical issues found.")
+    with col_a:
+        st.markdown("**✅ Priority Actions**")
+        for i, a in enumerate(tldr_actions[:3], 1):
+            st.markdown(f"{i}. {a}")
+
+    if total_opportunity > 0:
+        st.caption(
+            f"Total estimated missed clicks this period: **~{int(total_opportunity):,}**. "
+            f"Addressing top quick wins could recover **{int(total_opportunity * 0.3):,}–"
+            f"{int(total_opportunity * 0.6):,} clicks** without new content or backlinks."
+        )
+
 st.divider()
 
 
 # ── KPI Row ───────────────────────────────────────────────────────────────────
-st.markdown('<div class="section-header">📌 Executive Summary</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">📌 KPIs</div>', unsafe_allow_html=True)
 
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.metric("Total Clicks",            f"{total_clicks:,}",
@@ -835,6 +954,111 @@ with col_tier:
             "Content updates could push many to page 1.</div>",
             unsafe_allow_html=True,
         )
+
+
+# ── Query Length Analysis ─────────────────────────────────────────────────────
+st.markdown('<div class="section-header">🔤 Query Length Analysis (Head vs Long-Tail)</div>',
+            unsafe_allow_html=True)
+st.caption("Longer queries = lower volume but higher purchase intent and easier to rank for.")
+
+col_ql1, col_ql2 = st.columns(2)
+
+with col_ql1:
+    fig_ql_imp = px.bar(
+        length_summary, x="Length Group", y="Impressions",
+        color="Length Group",
+        color_discrete_sequence=["#d32f2f","#f9a825","#1565c0","#388e3c","#7b1fa2"],
+        title="Impressions by query length",
+        text="Impressions",
+    )
+    fig_ql_imp.update_traces(textposition="outside", showlegend=False)
+    fig_ql_imp.update_layout(height=320, plot_bgcolor="white", margin=dict(t=40, b=10))
+    st.plotly_chart(fig_ql_imp, use_container_width=True)
+
+with col_ql2:
+    fig_ql_ctr = px.bar(
+        length_summary, x="Length Group", y=["CTR", "Position"],
+        barmode="group",
+        color_discrete_sequence=["#1565c0", "#ff6b35"],
+        title="Avg CTR % and Position by query length",
+    )
+    fig_ql_ctr.update_layout(height=320, plot_bgcolor="white", margin=dict(t=40, b=10))
+    st.plotly_chart(fig_ql_ctr, use_container_width=True)
+
+# Insight: long-tail share
+longtail = queries[queries["Word Count"] >= 3]
+longtail_imps_pct = 100 * longtail["Impressions"].sum() / imp_total_s if imp_total_s > 0 else 0
+longtail_ctr = longtail["CTR"].mean() if len(longtail) > 0 else 0
+headterm_ctr = queries[queries["Word Count"] <= 2]["CTR"].mean() if len(queries[queries["Word Count"] <= 2]) > 0 else 0
+
+if longtail_ctr > headterm_ctr:
+    st.markdown(
+        f'<div class="alert-green">'
+        f"Long-tail queries (3+ words) make up <strong>{longtail_imps_pct:.0f}%</strong> of impressions "
+        f"but convert at <strong>{longtail_ctr:.2f}% CTR</strong> vs "
+        f"<strong>{headterm_ctr:.2f}%</strong> for head terms. "
+        "Targeting more specific, intent-rich long-tail keywords is a high-ROI strategy."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        f'<div class="alert-blue">'
+        f"Long-tail queries (3+ words) account for <strong>{longtail_imps_pct:.0f}%</strong> of impressions."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+# ── Featured Snippet Opportunities ───────────────────────────────────────────
+st.markdown('<div class="section-header">⭐ Featured Snippet Opportunities</div>',
+            unsafe_allow_html=True)
+st.caption(
+    "Queries ranking **position 2–5** with informational intent are prime candidates for "
+    "answer boxes (position 0). Structured content (H2 headers, bullet lists, Q&A schema) "
+    "can jump above position 1 and drive outsized CTR."
+)
+
+if len(snippet_opps) > 0:
+    col_sn1, col_sn2 = st.columns([2, 1])
+    with col_sn1:
+        st.dataframe(
+            snippet_opps.style
+            .background_gradient(subset=["Impressions"], cmap="Blues")
+            .format({
+                "Position":     "{:.1f}",
+                "CTR":          "{:.2f}%",
+                "Expected CTR": "{:.1f}%",
+            }),
+            use_container_width=True,
+            height=420,
+        )
+    with col_sn2:
+        st.markdown("**How to capture the snippet:**")
+        st.markdown("""
+1. Identify what the query is asking
+2. Add a direct 40–60 word answer paragraph at the top of the page
+3. Use the exact query phrase as an H2 header
+4. For list queries: use `<ul>` / `<ol>` with concise items
+5. For definition queries: use a bolded term + 1-sentence definition
+6. Add FAQ schema markup
+7. Internally link to this page with anchor text = the query
+        """)
+        st.markdown(
+            f'<div class="alert-green">'
+            f"<strong>{len(snippet_opps)}</strong> snippet opportunities found. "
+            f"Top opportunity: <em>\"{snippet_opps.iloc[0]['Query']}\"</em> "
+            f"— position {snippet_opps.iloc[0]['Position']:.1f}, "
+            f"{int(snippet_opps.iloc[0]['Impressions']):,} impressions."
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+else:
+    st.markdown(
+        '<div class="alert-blue">No featured snippet opportunities in current data '
+        '(need queries at position 2–5 with informational intent and 10+ impressions).</div>',
+        unsafe_allow_html=True,
+    )
 
 
 # ── Device Breakdown ──────────────────────────────────────────────────────────
