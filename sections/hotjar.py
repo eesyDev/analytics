@@ -26,20 +26,62 @@ def render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart):
 
                 first_val = hj_df["Users"].iloc[0]
                 display = hj_df.copy()
-                display["Conversion Rate"] = (hj_df["Users"] / first_val * 100).round(1).astype(str) + "%"
-                display["Drop-off %"]      = ((1 - hj_df["Users"] / first_val) * 100).round(1).astype(str) + "%"
+                
+                # Общая конверсия (от начала)
+                display["Total CR"] = (hj_df["Users"] / first_val * 100).round(1).astype(str) + "%"
+                
+                # Профессиональный анализ: Step-to-Step конверсия (отвал на каждом шаге)
+                step_cr_num = (hj_df["Users"] / hj_df["Users"].shift(1) * 100).round(1)
+                display["Step CR (от пред. шага)"] = step_cr_num.fillna(100).astype(str) + "%"
+                display["Step Drop-off (потеря)"] = (100 - step_cr_num).fillna(0).astype(str) + "%"
+                
+                # Переставляем колонки для красивого вывода
+                display = display[["Step", "Users", "Total CR", "Step CR (от пред. шага)", "Step Drop-off (потеря)"]]
                 st.dataframe(display, use_container_width=True, hide_index=True)
 
                 if len(hj_df) > 1:
-                    diffs     = hj_df["Users"].diff().abs().fillna(0)
-                    worst_idx = diffs.idxmax()
-                    st.markdown(
-                        f'<div class="alert-red"><strong>Biggest drop-off:</strong> '
-                        f"{int(diffs[worst_idx]):,} users lost at "
-                        f"<strong>{hj_df.loc[worst_idx, 'Step']}</strong>. "
-                        "Highest-priority fix in the funnel.</div>",
-                        unsafe_allow_html=True,
-                    )
+                    # Находим шаг с самым большим ПРОЦЕНТНЫМ отвалом
+                    step_dropoffs = (1 - hj_df["Users"] / hj_df["Users"].shift(1)) * 100
+                    # shift(1) даёт NaN для первого шага — idxmax() его игнорирует, но страхуемся
+                    valid = step_dropoffs.dropna()
+                    if valid.empty:
+                        st.info("Недостаточно данных для анализа bottleneck.")
+                    else:
+                        worst_idx = valid.idxmax()
+                        worst_drop_pct = valid[worst_idx]
+
+                        worst_step_name = hj_df.loc[worst_idx, 'Step']
+                        prev_idx = hj_df.index[hj_df.index.get_loc(worst_idx) - 1]
+                        prev_step_name = hj_df.loc[prev_idx, 'Step']
+
+                        st.markdown(
+                            f'<div class="alert-red"><strong>Критическое "Бутылочное Горлышко":</strong> '
+                            f'Самый большой отвал происходит при переходе от <strong>{prev_step_name}</strong> '
+                            f'к <strong>{worst_step_name}</strong>. Здесь уходит '
+                            f'<strong>{worst_drop_pct:.1f}%</strong> потенциальных покупателей.</div>',
+                            unsafe_allow_html=True,
+                        )
+
+                        # E-commerce гипотезы для брошенной корзины/чекаута
+                        worst_step_lower = str(worst_step_name).lower()
+                        prev_step_lower  = str(prev_step_name).lower()
+                        if any(k in worst_step_lower or k in prev_step_lower
+                               for k in ["cart", "checkout"]):
+                            st.markdown(
+                                '<div class="alert-amber"><strong>💡 E-commerce инсайты (Cart / Checkout Abandonment):</strong><ul>'
+                                '<li><strong>Freight Shipping Shock:</strong> Доставка тяжелого оборудования стоит дорого. '
+                                'Если B2B клиент видит стоимость доставки впервые только на чекауте — он уходит. '
+                                'Добавь калькулятор доставки на страницу продукта.</li>'
+                                '<li><strong>B2B Financing / Invoice Payment:</strong> В B2B редко платят кредиткой сразу '
+                                '(Net 30, Purchase Orders, Request a Quote). '
+                                'Если на чекауте нет этих опций — это прямая причина отвала.</li>'
+                                '<li><strong>Fit Anxiety:</strong> Клиент дошёл до корзины, но засомневался — '
+                                'подойдёт ли attachment к его экскаватору. '
+                                'Критически важен значок "Guaranteed Fit" и возможность связаться с экспертом прямо в корзине.</li>'
+                                '</ul></div>',
+                                unsafe_allow_html=True,
+                            )
+
             else:
                 st.warning(
                     "Hotjar CSV missing required columns: **Step** and **Users**. "
