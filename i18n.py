@@ -71,9 +71,11 @@ locales = {
         "Weighted CTR": "Взвешенный CTR",
         "Weighted Avg Position": "Средняя Позиция",
         "Estimated Missed Clicks": "Упущенные клики (потенциал)",
+        "Hidden (Anonymized) Clicks": "Скрытые (Анонимные) Клики",
         "Impressions-weighted CTR — more accurate than simple average": "CTR, взвешенный по показам (точнее обычного)",
         "Lower = better. Green delta = position improved.": "Меньше = лучше. Зеленая дельта = рост позиций.",
         "Additional clicks if all queries reached benchmark CTR for their position": "Клики, если бы CTR достигал нормы для позиций",
+        "Clicks not attributed to any specific search query due to Google privacy limits.": "Клики, скрытые Google из-за политики конфиденциальности (анонимные запросы).",
         "⚠️ GSC sampling: on high-traffic properties Google may show only a fraction of actual data. Treat all figures as directional — export to BigQuery for exact counts.": "⚠️ Сэмплинг GSC: на сайтах с высоким трафиком Google может показывать лишь часть реальных данных. Воспринимайте цифры как ориентировочные — для точных значений используйте экспорт в BigQuery.",
 
         # trend.py
@@ -96,6 +98,7 @@ locales = {
         # findings.py
         "🔴 Critical Findings": "🔴 Критические наблюдения",
         "Blog / informational pages drive **{pct:.0f}%** of clicks but have no direct purchase intent. Only **{diff:.0f}%** of clicks land on product or category pages.": "Инфо-страницы собирают **{pct:.0f}%** кликов без покупательского спроса. Ишь **{diff:.0f}%** уходит на товары/категории.",
+        "Google Search Console is hiding **{pct:.0f}%** of your clicks ({clicks:,}) due to privacy thresholds. This is common in B2B but means your query data is highly incomplete.": "Google прячет **{pct:.0f}%** ваших кликов ({clicks:,}) из-за порога анонимности. В B2B это значит, что мы видим меньше половины реальной картины поиска.",
         "**{imp:,} impressions** across **{n}** queries received zero clicks. The site ranks — but users don't click. Title tags and meta descriptions need immediate attention.": "**{imp:,} показов** и **{n}** запросов собрали ноль кликов. Сайт в выдаче, но его игнорируют. Срочно обновите Title и Meta.",
         "**{pct:.0f}%** of clicks are branded queries. Non-brand organic traffic is critically low — almost all traffic comes from users who already know the brand.": "**{pct:.0f}%** кликов — это запросы бренда. Органика почти нулевая, трафик идет только от тех, кто вас уже знает.",
         "Desktop ranking ({dt:.1f}) is significantly worse than mobile ({mob:.1f}) — a gap of {gap:.1f} positions. B2B buyers who research on desktop see you below competitors.": "Десктоп ({dt:.1f}) сильно отстает от мобильных устройств ({mob:.1f}). Разрыв {gap:.1f} позиций. B2B клиенты видят вас ниже конкурентов.",

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 import pandas as pd
-from config import CTR_BENCH, CTR_BENCH_BRAND, COMMERCIAL_SIGNALS
+from config import CTR_BENCH_INFO, CTR_BENCH_COMM, CTR_BENCH_BRAND, COMMERCIAL_SIGNALS
 
 
 # ── Intent classification ─────────────────────────────────────────────────────
@@ -31,12 +31,19 @@ def expected_ctr(pos, intent: str = "") -> float:
         p = max(1, int(round(float(pos))))
     except (ValueError, TypeError):
         return 0.3
-    bench = CTR_BENCH_BRAND if intent == "Brand" else CTR_BENCH
+        
+    if intent == "Brand":
+        bench = CTR_BENCH_BRAND
+    elif intent == "Commercial / Product":
+        bench = CTR_BENCH_COMM
+    else:
+        bench = CTR_BENCH_INFO
+
     if p <= 10:
         return bench[p]
     if p <= 20:
-        return 1.5 if intent == "Brand" else 1.0
-    return 0.5 if intent == "Brand" else 0.3
+        return 1.5 if intent == "Brand" else (0.8 if intent == "Commercial / Product" else 1.0)
+    return 0.5 if intent == "Brand" else (0.2 if intent == "Commercial / Product" else 0.3)
 
 
 # ── Opportunity scoring ───────────────────────────────────────────────────────
@@ -73,6 +80,8 @@ class Stats:
     desktop_pos: Optional[float]
     date_range: str
     top_country: Optional[object]
+    anonymized_clicks: int
+    anonymized_pct: float
     intent_summary: pd.DataFrame
     queries_ranked: pd.DataFrame
     top_opps: pd.DataFrame
@@ -134,6 +143,16 @@ def compute_stats(queries, pages, chart, devices, countries) -> Stats:
     )
 
     top_country = countries.nlargest(1, "Clicks").iloc[0] if len(countries) > 0 else None
+    
+    anonymized_clicks = 0
+    anonymized_pct = 0.0
+    if pages is not None and "Clicks" in pages.columns and "Clicks" in queries.columns:
+        pages_clicks = int(pages["Clicks"].sum())
+        q_clicks = int(queries["Clicks"].sum())
+        diff = pages_clicks - q_clicks
+        if diff > 0:
+            anonymized_clicks = diff
+            anonymized_pct = min(100.0, 100 * diff / max(1, pages_clicks))
 
     return Stats(
         total_clicks=int(chart["Clicks"].sum()),
@@ -152,6 +171,8 @@ def compute_stats(queries, pages, chart, devices, countries) -> Stats:
         desktop_pos=desktop_pos,
         date_range=date_range,
         top_country=top_country,
+        anonymized_clicks=anonymized_clicks,
+        anonymized_pct=anonymized_pct,
         intent_summary=intent_summary,
         queries_ranked=queries_ranked,
         top_opps=top_opps,
@@ -282,6 +303,7 @@ def compute_cannibalization(cannibal_df) -> Optional[pd.DataFrame]:
     if "Query" not in cannibal_df.columns or "Page" not in cannibal_df.columns:
         return None
 
+    # Group by query and get sum
     grp = (
         cannibal_df.groupby("Query")
         .agg(
@@ -292,7 +314,31 @@ def compute_cannibalization(cannibal_df) -> Optional[pd.DataFrame]:
         )
         .reset_index()
     )
-    result = grp[grp["Pages"] >= 2].sort_values("Impressions", ascending=False).reset_index(drop=True)
+    
+    # Filter for true cannibalization (competing page must have >15% of top page impressions)
+    real_cannibals = []
+    
+    for _, row in grp[grp["Pages"] >= 2].iterrows():
+        q = row["Query"]
+        # get all pages for this query
+        q_pages = cannibal_df[cannibal_df["Query"] == q].sort_values("Impressions", ascending=False)
+        
+        if len(q_pages) >= 2:
+            top_imps = q_pages.iloc[0]["Impressions"]
+            # Check how many pages have at least 15% of the leader's impressions
+            competitors = q_pages[q_pages["Impressions"] > (0.15 * top_imps)]
+            
+            if len(competitors) >= 2:
+                # Real cannibalization found
+                row_copy = row.copy()
+                row_copy["Pages"] = len(competitors)
+                row_copy["Page_list"] = list(competitors["Page"].unique())
+                real_cannibals.append(row_copy)
+
+    if not real_cannibals:
+        return pd.DataFrame()
+        
+    result = pd.DataFrame(real_cannibals).sort_values("Impressions", ascending=False).reset_index(drop=True)
     result.index += 1
 
     def fmt_pages(lst):

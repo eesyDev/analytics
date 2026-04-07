@@ -9,6 +9,10 @@ def render(stats, queries, _):
         findings.append(("red",
             _("Blog / informational pages drive **{pct:.0f}%** of clicks but have no direct purchase intent. Only **{diff:.0f}%** of clicks land on product or category pages.", pct=stats.blog_pct, diff=100-stats.blog_pct)))
 
+    if stats.anonymized_pct > 20:
+        findings.append(("red",
+            _("Google Search Console is hiding **{pct:.0f}%** of your clicks ({clicks:,}) due to privacy thresholds. This is common in B2B but means your query data is highly incomplete.", pct=stats.anonymized_pct, clicks=stats.anonymized_clicks)))
+
     if stats.zero_click_imp > 0:
         zero_count = int((queries["Clicks"] == 0).sum())
         findings.append(("red",
