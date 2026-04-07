@@ -2,11 +2,8 @@ import streamlit as st
 import plotly.express as px
 from config import INTENT_COLORS
 
-
-def render(queries_ranked, queries, length_summary, snippet_opps):
-    # Position distribution
-    st.markdown('<div class="section-header">📊 Ranking Position Distribution</div>',
-                unsafe_allow_html=True)
+def render(queries_ranked, queries, length_summary, snippet_opps, _):
+    st.markdown(f'<div class="section-header">{_("📊 Ranking Position Distribution")}</div>', unsafe_allow_html=True)
 
     col_hist, col_tier = st.columns([2, 1])
     with col_hist:
@@ -14,12 +11,12 @@ def render(queries_ranked, queries, length_summary, snippet_opps):
             queries_ranked[queries_ranked["Position"] <= 100],
             x="Position", nbins=20,
             color="Intent", color_discrete_map=INTENT_COLORS,
-            title="Distribution of ranking positions",
+            title=_("Distribution of ranking positions"),
             barmode="stack",
         )
         fig_hist.update_layout(height=340, plot_bgcolor="white")
         fig_hist.add_vline(x=10, line_dash="dash", line_color="red",
-                           annotation_text="Page 2 boundary")
+                           annotation_text=_("Page 2 boundary"))
         st.plotly_chart(fig_hist, use_container_width=True)
 
     with col_tier:
@@ -44,23 +41,21 @@ def render(queries_ranked, queries, length_summary, snippet_opps):
             })
         import pandas as pd
         tier_df = pd.DataFrame(rows)
-        st.markdown("**Queries by position tier**")
+        st.markdown(_("**Queries by position tier**"))
         st.dataframe(tier_df, use_container_width=True, hide_index=True)
 
         p4_10  = tier_df[tier_df["Tier"] == "Pos 4–10"]["Queries"].values
         p11_20 = tier_df[tier_df["Tier"] == "Pos 11–20"]["Queries"].values
         if len(p4_10) and len(p11_20) and p11_20[0] > p4_10[0]:
             st.markdown(
-                f'<div class="alert-amber"><strong>{p11_20[0]}</strong> queries on page 2 vs '
-                f'<strong>{p4_10[0]}</strong> on page 1. '
-                "Content updates could push many to page 1.</div>",
+                f'<div class="alert-amber">' + 
+                _("**{p11}** queries on page 2 vs **{p4}** on page 1. Content updates could push many to page 1.", p11=p11_20[0], p4=p4_10[0]) + 
+                '</div>',
                 unsafe_allow_html=True,
             )
 
-    # Query length analysis
-    st.markdown('<div class="section-header">🔤 Query Length Analysis (Head vs Long-Tail)</div>',
-                unsafe_allow_html=True)
-    st.caption("Longer queries = lower volume but higher purchase intent and easier to rank for.")
+    st.markdown(f'<div class="section-header">{_("🔤 Query Length Analysis (Head vs Long-Tail)")}</div>', unsafe_allow_html=True)
+    st.caption(_("Longer queries = lower volume but higher purchase intent and easier to rank for."))
 
     col_ql1, col_ql2 = st.columns(2)
     with col_ql1:
@@ -68,7 +63,7 @@ def render(queries_ranked, queries, length_summary, snippet_opps):
             length_summary, x="Length Group", y="Impressions",
             color="Length Group",
             color_discrete_sequence=["#d32f2f","#f9a825","#1565c0","#388e3c","#7b1fa2"],
-            title="Impressions by query length", text="Impressions",
+            title=_("Impressions by query length"), text="Impressions",
         )
         fig_imp.update_traces(textposition="outside", showlegend=False)
         fig_imp.update_layout(height=320, plot_bgcolor="white", margin=dict(t=40, b=10))
@@ -79,7 +74,7 @@ def render(queries_ranked, queries, length_summary, snippet_opps):
             length_summary, x="Length Group", y=["CTR", "Position"],
             barmode="group",
             color_discrete_sequence=["#1565c0", "#ff6b35"],
-            title="Avg CTR % and Position by query length",
+            title=_("Avg CTR % and Position by query length"),
         )
         fig_ctr.update_layout(height=320, plot_bgcolor="white", margin=dict(t=40, b=10))
         st.plotly_chart(fig_ctr, use_container_width=True)
@@ -92,27 +87,21 @@ def render(queries_ranked, queries, length_summary, snippet_opps):
 
     if lt_ctr > ht_ctr:
         st.markdown(
-            f'<div class="alert-green">Long-tail queries (3+ words) make up '
-            f'<strong>{lt_pct:.0f}%</strong> of impressions but convert at '
-            f'<strong>{lt_ctr:.2f}% CTR</strong> vs <strong>{ht_ctr:.2f}%</strong> for head terms. '
-            "Targeting long-tail keywords is a high-ROI strategy.</div>",
+            f'<div class="alert-green">' +
+            _("Long-tail queries (3+ words) make up **{pct:.0f}%** of impressions but convert at **{ctr:.2f}% CTR** vs **{ht:.2f}%** for head terms. Targeting long-tail keywords is a high-ROI strategy.", pct=lt_pct, ctr=lt_ctr, ht=ht_ctr) +
+            '</div>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            f'<div class="alert-blue">Long-tail queries (3+ words) account for '
-            f'<strong>{lt_pct:.0f}%</strong> of impressions.</div>',
+            f'<div class="alert-blue">' +
+            _("Long-tail queries (3+ words) account for **{pct:.0f}%** of impressions.", pct=lt_pct) +
+            '</div>',
             unsafe_allow_html=True,
         )
 
-    # Featured snippet opportunities
-    st.markdown('<div class="section-header">⭐ Featured Snippet Opportunities</div>',
-                unsafe_allow_html=True)
-    st.caption(
-        "Queries ranking **position 2–5** with informational intent — prime candidates for "
-        "answer boxes. Structured content (H2 headers, bullet lists, FAQ schema) can jump "
-        "above position 1."
-    )
+    st.markdown(f'<div class="section-header">{_("⭐ Featured Snippet Opportunities")}</div>', unsafe_allow_html=True)
+    st.caption(_("Queries ranking **position 2–5** with informational intent — prime candidates for answer boxes."))
 
     if len(snippet_opps) > 0:
         col_sn1, col_sn2 = st.columns([2, 1])
@@ -124,25 +113,16 @@ def render(queries_ranked, queries, length_summary, snippet_opps):
                 use_container_width=True, height=420,
             )
         with col_sn2:
-            st.markdown("**How to capture the snippet:**")
-            st.markdown("""
-1. Add a direct 40–60 word answer at the top of the page
-2. Use the exact query phrase as an H2 header
-3. For list queries: use `<ul>` / `<ol>` with concise items
-4. For definition queries: bolded term + 1-sentence definition
-5. Add FAQ schema markup
-6. Internal links with anchor text = the query
-            """)
+            st.markdown(_("**How to capture the snippet:**"))
+            st.markdown(_("1. Add a direct 40–60 word answer at the top of the page\n2. Use the exact query phrase as an H2 header\n3. For list queries: use `<ul>` / `<ol>` with concise items\n4. For definition queries: bolded term + 1-sentence definition\n5. Add FAQ schema markup\n6. Internal links with anchor text = the query"))
             st.markdown(
-                f'<div class="alert-green"><strong>{len(snippet_opps)}</strong> opportunities. '
-                f'Top: <em>"{snippet_opps.iloc[0]["Query"]}"</em> — '
-                f'pos {snippet_opps.iloc[0]["Position"]:.1f}, '
-                f'{int(snippet_opps.iloc[0]["Impressions"]):,} impressions.</div>',
+                f'<div class="alert-green">' + 
+                _("**{n}** opportunities. Top: *\"{q}\"* — pos {pos:.1f}, {imp:,} impressions.", n=len(snippet_opps), q=snippet_opps.iloc[0]["Query"], pos=snippet_opps.iloc[0]["Position"], imp=int(snippet_opps.iloc[0]["Impressions"])) +
+                '</div>',
                 unsafe_allow_html=True,
             )
     else:
         st.markdown(
-            '<div class="alert-blue">No snippet opportunities found '
-            '(need queries at position 2–5, informational intent, 10+ impressions).</div>',
+            f'<div class="alert-blue">{_("No snippet opportunities found (need queries at position 2–5, informational intent, 10+ impressions).")}</div>',
             unsafe_allow_html=True,
         )
