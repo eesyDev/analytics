@@ -35,7 +35,18 @@ def render(queries, stats, _):
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown(f'<div class="section-header">{_("💡 Prioritized Quick Wins")}</div>', unsafe_allow_html=True)
-    st.markdown(_("**Opportunity Score** = estimated additional clicks if CTR reaches benchmark for current position."))
+    st.markdown(_(
+        "**Opportunity Score** = estimated additional clicks if CTR reaches benchmark for current position. "
+        "This is a directional estimate — actual results depend on SERP features, competition, and content quality."
+    ))
+
+    # ⚠️ Zero-click caveat — critical for professional use
+    st.markdown(
+        f'<div class="alert-amber">'
+        + _("⚠️ Note: queries with 0 clicks but high impressions may rank in featured snippets, knowledge panels, or below multiple ads — where organic clicks are structurally lower. Verify in GSC before prioritizing.")
+        + '</div>',
+        unsafe_allow_html=True,
+    )
 
     if len(stats.top_opps) > 0:
         st.dataframe(

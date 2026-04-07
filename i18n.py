@@ -74,6 +74,7 @@ locales = {
         "Impressions-weighted CTR — more accurate than simple average": "CTR, взвешенный по показам (точнее обычного)",
         "Lower = better. Green delta = position improved.": "Меньше = лучше. Зеленая дельта = рост позиций.",
         "Additional clicks if all queries reached benchmark CTR for their position": "Клики, если бы CTR достигал нормы для позиций",
+        "⚠️ GSC sampling: on high-traffic properties Google may show only a fraction of actual data. Treat all figures as directional — export to BigQuery for exact counts.": "⚠️ Сэмплинг GSC: на сайтах с высоким трафиком Google может показывать лишь часть реальных данных. Воспринимайте цифры как ориентировочные — для точных значений используйте экспорт в BigQuery.",
 
         # trend.py
         "📈 Traffic Trend": "📈 Тренд трафика",
@@ -90,6 +91,7 @@ locales = {
         "Click change vs previous period": "Динамика кликов к прошлому периоду",
         "**New queries this period**": "**Новые запросы в этом периоде**",
         "**Queries that dropped out**": "**Запросы, выпавшие из выдачи**",
+        "⚠️ Statistical note: query-level changes over short periods (7–14 days) reflect normal ranking variance as much as real trends. Focus on directional patterns across groups, not individual query swings.": "⚠️ Статистика: изменения на уровне отдельных запросов за короткий период (7–14 дней) могут быть просто шумом, а не настоящим трендом. Смотрите на общие паттерны, а не на отдельные скачки.",
 
         # findings.py
         "🔴 Critical Findings": "🔴 Критические наблюдения",
@@ -101,6 +103,8 @@ locales = {
         "No critical issues detected based on current data.": "Критичных проблем в данный момент не выявлено.",
 
         # opportunities.py
+        "**Opportunity Score** = estimated additional clicks if CTR reaches benchmark for current position. This is a directional estimate — actual results depend on SERP features, competition, and content quality.": "**Упущенный потенциал** = добавочные клики при достижении нормы CTR для данной позиции. Это ориентировочная оценка — фактический результат зависит от SERP-формата, конкуренции и качества контента.",
+        "⚠️ Note: queries with 0 clicks but high impressions may rank in featured snippets, knowledge panels, or below multiple ads — where organic clicks are structurally lower. Verify in GSC before prioritizing.": "⚠️ Важно: запросы с 0 кликов при высоких показах могут занимать featured snippets, knowledge panel или находиться ниже нескольких рекламных блоков — там органических кликов меньше по природе. Проверьте в GSC перед тем, как ставить их в приоритет.",
         "🎯 Opportunity Matrix — CTR vs Position": "🎯 Матрица Потенциала (CTR / Позиция)",
         "Queries below the red benchmark line are underperforming. Size = Impressions.": "Запросы ниже красной линии нормы — отстающие.",
         "Each bubble = one query (≥5 impressions)": "Каждая точка — запрос (≥5 показов)",
@@ -194,8 +198,12 @@ locales = {
     }
 }
 
-def get_text(lang, key, **kwargs):
-    text = locales.get(lang, {}).get(key, key)
+def get_text(lang, key, *args, **kwargs):
+    """
+    args[0] = positional fallback string (used when key is a short lookup key).
+    kwargs  = format arguments.
+    """
+    text = locales.get(lang, {}).get(key, args[0] if args else key)
     if kwargs:
         try:
             return text.format(**kwargs)

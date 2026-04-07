@@ -55,6 +55,10 @@ def render(chart, prev_chart, query_movers, page_movers, _):
         st.plotly_chart(fig_cmp, use_container_width=True)
 
     if query_movers is not None:
+        st.caption(_(
+            "⚠️ Statistical note: query-level changes over short periods (7–14 days) reflect normal ranking "
+            "variance as much as real trends. Focus on directional patterns across groups, not individual query swings."
+        ))
         col_gain, col_lose = st.columns(2)
         with col_gain:
             st.markdown(_("**Top growing queries**"))

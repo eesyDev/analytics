@@ -17,7 +17,7 @@ st.markdown(config.CSS, unsafe_allow_html=True)
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     lang_choice = st.radio("🌐 Language / Язык", ["EN", "RU"])
-    _ = lambda key, **kwargs: get_text(lang_choice, key, **kwargs)
+    _ = lambda key, *args, **kwargs: get_text(lang_choice, key, *args, **kwargs)
 
     st.header(_("⚙️ Settings"))
     client_name = st.text_input(_("Client / Site Name"), value=_("My Site"))

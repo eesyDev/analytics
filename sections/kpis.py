@@ -28,4 +28,9 @@ def render(stats, deltas, _):
               help=_("Lower = better. Green delta = position improved."))
     k5.metric(_("Estimated Missed Clicks"), f"~{int(stats.total_opportunity):,}",
               help=_("Additional clicks if all queries reached benchmark CTR for their position"))
+
+    st.caption(_(
+        "⚠️ GSC sampling: on high-traffic properties Google may show only a fraction of actual data. "
+        "Treat all figures as directional — export to BigQuery for exact counts."
+    ))
     st.divider()
