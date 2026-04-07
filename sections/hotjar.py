@@ -28,17 +28,17 @@ def render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _):
                 
                 display["Total CR"] = (hj_df["Users"] / first_val * 100).round(1).astype(str) + "%"
                 step_cr_num = (hj_df["Users"] / hj_df["Users"].shift(1) * 100).round(1)
-                display["Step CR (от пред. шага)"] = step_cr_num.fillna(100).astype(str) + "%"
-                display["Step Drop-off (потеря)"] = (100 - step_cr_num).fillna(0).astype(str) + "%"
-                
-                display = display[["Step", "Users", "Total CR", "Step CR (от пред. шага)", "Step Drop-off (потеря)"]]
+                display["Step CR"] = step_cr_num.fillna(100).astype(str) + "%"
+                display["Step Drop-off"] = (100 - step_cr_num).fillna(0).astype(str) + "%"
+
+                display = display[["Step", "Users", "Total CR", "Step CR", "Step Drop-off"]]
                 st.dataframe(display, use_container_width=True, hide_index=True)
 
                 if len(hj_df) > 1:
                     step_dropoffs = (1 - hj_df["Users"] / hj_df["Users"].shift(1)) * 100
                     valid = step_dropoffs.dropna()
                     if valid.empty:
-                        st.info(_("Недостаточно данных для анализа bottleneck."))
+                        st.info(_("Not enough data to detect a bottleneck."))
                     else:
                         worst_idx = valid.idxmax()
                         worst_drop_pct = valid[worst_idx]
@@ -48,10 +48,10 @@ def render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _):
                         prev_step_name = hj_df.loc[prev_idx, 'Step']
 
                         st.markdown(
-                            f'<div class="alert-red"><strong>{_("bottleneck_title", "Критическое Бутылочное Горлышко")}:</strong> '
-                            f'Самый большой отвал происходит при переходе от <strong>{prev_step_name}</strong> '
-                            f'к <strong>{worst_step_name}</strong>. Здесь уходит '
-                            f'<strong>{worst_drop_pct:.1f}%</strong> потенциальных покупателей.</div>',
+                            f'<div class="alert-red"><strong>🔴 Critical Bottleneck:</strong> '
+                            f'The biggest drop-off happens between <strong>{prev_step_name}</strong> '
+                            f'and <strong>{worst_step_name}</strong> — '
+                            f'<strong>{worst_drop_pct:.1f}%</strong> of potential buyers are lost here.</div>',
                             unsafe_allow_html=True,
                         )
 
@@ -59,16 +59,16 @@ def render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _):
                         prev_step_lower  = str(prev_step_name).lower()
                         if any(k in worst_step_lower or k in prev_step_lower for k in ["cart", "checkout"]):
                             st.markdown(
-                                '<div class="alert-amber"><strong>💡 E-commerce инсайты (Cart / Checkout Abandonment):</strong><ul>'
-                                '<li><strong>Freight Shipping Shock:</strong> Доставка тяжелого оборудования стоит дорого. '
-                                'Если B2B клиент видит стоимость доставки впервые только на чекауте — он уходит. '
-                                'Добавь калькулятор доставки на страницу продукта.</li>'
-                                '<li><strong>B2B Financing / Invoice Payment:</strong> В B2B редко платят кредиткой сразу '
+                                '<div class="alert-amber"><strong>💡 E-commerce Insights (Cart / Checkout Abandonment):</strong><ul>'
+                                '<li><strong>Shipping Cost Shock:</strong> Freight costs for heavy equipment are high. '
+                                'If B2B buyers see shipping costs for the first time at checkout, they leave. '
+                                'Add a shipping calculator to the product page.</li>'
+                                '<li><strong>B2B Financing / Invoice Payment:</strong> B2B buyers rarely pay by card immediately '
                                 '(Net 30, Purchase Orders, Request a Quote). '
-                                'Если на чекауте нет этих опций — это прямая причина отвала.</li>'
-                                '<li><strong>Fit Anxiety:</strong> Клиент дошёл до корзины, но засомневался — '
-                                'подойдёт ли attachment к его экскаватору. '
-                                'Критически важен значок "Guaranteed Fit" и возможность связаться с экспертом прямо в корзине.</li>'
+                                'If these options are missing at checkout, that\'s a direct cause of drop-off.</li>'
+                                '<li><strong>Fit Anxiety:</strong> The buyer reached the cart but got uncertain — '
+                                'will this attachment fit their machine? '
+                                'A "Guaranteed Fit" badge and easy access to an expert right in the cart are critical.</li>'
                                 '</ul></div>',
                                 unsafe_allow_html=True,
                             )

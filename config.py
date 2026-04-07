@@ -1,5 +1,14 @@
 CSS = """
 <style>
+/* Move sidebar to the right */
+.stApp {
+    flex-direction: row-reverse;
+}
+[data-testid="stSidebarCollapsedControl"] {
+    right: 0.5rem;
+    left: unset;
+}
+
 .block-container { padding-top: 2rem; padding-bottom: 2rem; }
 .alert-red {
     background: #fdecea; border-left: 4px solid #d32f2f;

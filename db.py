@@ -8,8 +8,8 @@ def init_db() -> Client:
     url = st.secrets.get("SUPABASE_URL", "")
     key = st.secrets.get("SUPABASE_KEY", "")
     if not url or not key:
-        st.error("⚠️ Ошибка конфигурации: Ключи Supabase не найдены.")
-        st.info("Создайте файл `.streamlit/secrets.toml` с ключами SUPABASE_URL и SUPABASE_KEY.")
+        st.error("⚠️ Configuration error: Supabase keys not found.")
+        st.info("Create a `.streamlit/secrets.toml` file with SUPABASE_URL and SUPABASE_KEY.")
         st.stop()
     return create_client(url, key)
 
@@ -30,9 +30,9 @@ def login(email, password):
     except Exception as e:
         error_msg = str(e)
         if "Invalid login credentials" in error_msg:
-            st.error("Неверный логин или пароль")
+            st.error("Invalid email or password.")
         else:
-            st.error(f"Ошибка сервера: {error_msg}")
+            st.error(f"Server error: {error_msg}")
         return False
 
 def logout():
