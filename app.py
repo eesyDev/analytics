@@ -8,7 +8,7 @@ from analysis import (
 )
 from sections import tldr, kpis, trend, findings, opportunities
 from sections import cannibalization, intent, pages, positions, devices, geo, hotjar
-from sections import recommendations, export, competitor
+from sections import recommendations, export
 from i18n import get_text
 import i18n
 import db
@@ -191,7 +191,6 @@ positions.render(stats.queries_ranked, queries, length_summary, snippet_opps, _)
 devices.render(devices_df, stats.mobile_pos, stats.desktop_pos, _)
 geo.render(countries_df, stats.top_country, _)
 hotjar.render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _)
-competitor.render(_)
 
 recs = recommendations.render(stats, cannibal_issues, countries_df, _)
 export.render(stats.top_opps, recs, queries, _)
