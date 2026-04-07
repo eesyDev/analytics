@@ -8,7 +8,7 @@ from analysis import (
 )
 from sections import tldr, kpis, trend, findings, opportunities
 from sections import cannibalization, intent, pages, positions, devices, geo, hotjar
-from sections import recommendations, export
+from sections import recommendations, export, competitor
 from i18n import get_text
 
 st.set_page_config(page_title="SEO Performance Audit", page_icon="📊", layout="wide")
@@ -16,7 +16,8 @@ st.markdown(config.CSS, unsafe_allow_html=True)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    lang_choice = st.radio("🌐 Language / Язык", ["EN", "RU"])
+    # lang_choice = st.radio("🌐 Language / Язык", ["EN", "RU"])
+    lang_choice = "EN"
     _ = lambda key, *args, **kwargs: get_text(lang_choice, key, *args, **kwargs)
 
     st.header(_("⚙️ Settings"))
@@ -120,6 +121,7 @@ positions.render(stats.queries_ranked, queries, length_summary, snippet_opps, _)
 devices.render(devices_df, stats.mobile_pos, stats.desktop_pos, _)
 geo.render(countries_df, stats.top_country, _)
 hotjar.render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _)
+competitor.render(_)
 
 recs = recommendations.render(stats, cannibal_issues, countries_df, _)
 export.render(stats.top_opps, recs, queries, _)
