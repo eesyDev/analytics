@@ -79,6 +79,9 @@ def render(queries_ranked, queries, length_summary, snippet_opps, _):
         fig_ctr.update_layout(height=320, plot_bgcolor="white", margin=dict(t=40, b=10))
         st.plotly_chart(fig_ctr, use_container_width=True)
 
+    if "Word Count" not in queries.columns:
+        queries["Word Count"] = queries["Query"].str.split().str.len()
+
     longtail     = queries[queries["Word Count"] >= 3]
     imp_total_s  = queries["Impressions"].sum() or 1
     lt_pct       = 100 * longtail["Impressions"].sum() / imp_total_s
