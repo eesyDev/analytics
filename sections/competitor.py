@@ -64,7 +64,7 @@ def _label(url: str) -> str:
     return netloc.replace("www.", "") or url[:40]
 
 
-def render(_):
+def render(raw, _):
     st.markdown(
         f'<div class="section-header">{_("🔍 Competitor Page Analysis")}</div>',
         unsafe_allow_html=True,
@@ -74,11 +74,13 @@ def render(_):
         "The tool crawls each page and compares on-page SEO signals."
     ))
 
-    default_placeholder = "https://yoursite.com/page\nhttps://competitor1.com/page\nhttps://competitor2.com/page"
-    raw = st.text_area(_("URLs to analyze (your site first)"), placeholder=default_placeholder, height=130)
+    if not raw or not raw.strip():
+        st.info(_("Add URLs in the sidebar → Competitors tab to get started."))
+        return
+
     analyze = st.button(_("🔎 Analyze pages"), type="primary")
 
-    if not analyze or not raw.strip():
+    if not analyze:
         return
 
     urls = [u.strip() for u in raw.strip().splitlines() if u.strip().startswith("http")]

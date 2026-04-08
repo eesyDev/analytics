@@ -34,11 +34,20 @@ def render(pages, _):
 
     with col_p2:
         st.markdown(_("**CTR & Position for top pages**"))
+        
+        display_cols = ["Label", "Clicks", "CTR", "Position"]
+        formats = {"CTR": "{:.2f}%", "Position": "{:.1f}"}
+        
+        if "Sessions" in pages.columns and "Revenue" in pages.columns:
+            display_cols.extend(["Sessions", "Revenue"])
+            formats["Revenue"] = "${:,.2f}"
+            formats["Sessions"] = "{:,.0f}"
+
         st.dataframe(
-            pages_top[["Label", "Clicks", "CTR", "Position"]]
+            pages_top[display_cols]
             .sort_values("Clicks", ascending=False)
             .style
-            .format({"CTR": "{:.2f}%", "Position": "{:.1f}"})
+            .format(formats)
             .background_gradient(subset=["CTR"], cmap="RdYlGn"),
             height=560, use_container_width=True,
         )

@@ -68,3 +68,28 @@ def load_cannibal(upload) -> pd.DataFrame | None:
     except Exception as e:
         st.sidebar.warning(f"Query+Page load error: {e}")
         return None
+
+
+def load_ga4(upload) -> pd.DataFrame | None:
+    """Load GA4 landing pages export."""
+    if not upload:
+        return None
+    try:
+        df = clean_df(pd.read_csv(upload))
+        # Support common ga4 column names (e.g. 'Landing page' -> 'Page')
+        for col in ["Landing page", "Landing Page", "landing page", "Page path and screen class"]:
+            if col in df.columns:
+                df.rename(columns={col: "Page"}, inplace=True)
+                break
+        
+        # Ensure Revenue and Sessions are numeric
+        for col in ["Total revenue", "Revenue", "Sessions"]:
+            if col in df.columns:
+                if df[col].dtype == object:
+                    df[col] = df[col].astype(str).str.replace(r'[^\d.]', '', regex=True)
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+                
+        return df
+    except Exception as e:
+        st.sidebar.warning(f"GA4 load error: {e}")
+        return None

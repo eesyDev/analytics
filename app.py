@@ -1,14 +1,14 @@
 import streamlit as st
 import config
-from data_loader import load_current, load_previous, load_cannibal
+from data_loader import load_current, load_previous, load_cannibal, load_ga4
 from analysis import (
     classify_intent, tag_page, compute_opportunity,
     compute_stats, compute_length, compute_deltas, compute_movers,
     compute_cannibalization,
 )
 from sections import tldr, kpis, trend, findings, opportunities
-from sections import cannibalization, intent, pages, positions, devices, geo, hotjar
-from sections import recommendations, export
+from sections import cannibalization, intent, pages, positions, devices, geo, hotjar, decay
+from sections import recommendations, export, competitor
 from i18n import get_text
 import i18n
 import db
@@ -54,7 +54,7 @@ with st.sidebar:
         client_name = selected_proj
 
     with st.expander("⬆️ Upload files"):
-        tab1, tab2, tab3 = st.tabs(["Current", "Previous", "Extra"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Current", "Previous", "Extra", "Competitors"])
 
         with tab1:
             st.caption("GSC → Performance → Export")
@@ -70,9 +70,20 @@ with st.sidebar:
             f_prev_pages   = st.file_uploader("Pages.csv",   type="csv", key="pp")
             f_prev_chart   = st.file_uploader("Chart.csv",   type="csv", key="pch")
 
+        with tab4:
+            st.caption("Paste your page URL first, then competitor URLs")
+            competitor_urls_raw = st.text_area(
+                "URLs to analyze (your site first)",
+                placeholder="https://yoursite.com/page\nhttps://competitor1.com/page\nhttps://competitor2.com/page",
+                height=150,
+                key="competitor_urls",
+            )
+
         with tab3:
             st.caption("Cannibalization: GSC Pages + Queries export")
             f_query_page = st.file_uploader("Query+Page CSV", type="csv", key="qp")
+            st.caption("Google Analytics 4")
+            f_ga4        = st.file_uploader("Landing Pages CSV (Sessions, Revenue)", type="csv", key="ga4")
             st.caption("Hotjar")
             f_hotjar     = st.file_uploader("Funnel CSV",     type="csv", key="hj")
             f_hm_home    = st.file_uploader("Homepage heatmap",     type=["png","jpg","jpeg"], key="hm1")
@@ -96,12 +107,13 @@ with st.sidebar:
                     if f_prev_chart: db.upload_file(f"{uid}/{client_name}/prev_chart.csv", f_prev_chart.getvalue())
                     
                     if f_query_page: db.upload_file(f"{uid}/{client_name}/query_page.csv", f_query_page.getvalue())
+                    if f_ga4: db.upload_file(f"{uid}/{client_name}/ga4.csv", f_ga4.getvalue())
                     
                     if f_hotjar: db.upload_file(f"{uid}/{client_name}/funnel.csv", f_hotjar.getvalue())
                     if f_hm_home: db.upload_file(f"{uid}/{client_name}/hm_home", f_hm_home.getvalue(), f_hm_home.type)
                     if f_hm_product: db.upload_file(f"{uid}/{client_name}/hm_product", f_hm_product.getvalue(), f_hm_product.type)
                     if f_hm_cart: db.upload_file(f"{uid}/{client_name}/hm_cart", f_hm_cart.getvalue(), f_hm_cart.type)
-                    
+
                     st.cache_data.clear()
                 st.success("Files saved to cloud!")
                 import time; time.sleep(1)
@@ -145,6 +157,7 @@ with st.spinner("Loading additional data…"):
         "queries": load_b("prev_queries.csv"), "pages": load_b("prev_pages.csv"), "chart": load_b("prev_chart.csv")
     })
     cannibal_df = load_cannibal(load_b("query_page.csv"))
+    ga4_df = load_ga4(load_b("ga4.csv"))
     f_hotjar, f_hm_home, f_hm_product, f_hm_cart = load_b("funnel.csv"), load_b("hm_home"), load_b("hm_product"), load_b("hm_cart")
     has_prev = any([prev_queries is not None, prev_pages is not None, prev_chart is not None])
 
@@ -156,6 +169,18 @@ blog_kws    = [t.strip().lower() for t in blog_kw_raw.split("\n") if t.strip()]
 
 queries["Word Count"] = queries["Query"].str.split().str.len()
 queries["Intent"] = queries["Query"].apply(lambda q: classify_intent(q, brand_terms, info_terms))
+
+# Merge GA4 into pages_df (normalize URLs before merge)
+if ga4_df is not None:
+    def _norm(url):
+        return str(url).split("?")[0].rstrip("/").lower()
+    pages_df["_key"] = pages_df["Page"].apply(_norm)
+    ga4_df["_key"]   = ga4_df["Page"].apply(_norm)
+    ga4_num_cols = [c for c in ga4_df.columns if c not in ("Page", "_key")]
+    pages_df = pages_df.merge(ga4_df.drop(columns="Page"), on="_key", how="left")
+    pages_df[ga4_num_cols] = pages_df[ga4_num_cols].fillna(0)
+    pages_df.drop(columns="_key", inplace=True)
+
 pages_df["Type"]  = pages_df["Page"].apply(lambda u: tag_page(u, blog_kws))
 
 queries        = compute_opportunity(queries)
@@ -170,7 +195,7 @@ cannibal_issues = compute_cannibalization(cannibal_df)
 # ── Layout ────────────────────────────────────────────────────────────────────
 st.markdown(_("## 📊 {client_name} — SEO Performance Audit", client_name=client_name))
 st.markdown(
-    _("**Period:** {date_range} &nbsp;|&nbsp; **Source:** Google Search Console &nbsp;|&nbsp; **Queries analyzed:** {q_count:,}", 
+    _("**Period:** {date_range} &nbsp;|&nbsp; **Source:** Google Search Console &nbsp;|&nbsp; **Queries analyzed:** {q_count:,}",
       date_range=stats.date_range, q_count=len(queries)),
     unsafe_allow_html=True,
 )
@@ -178,22 +203,47 @@ st.markdown(
 tldr.render(stats, snippet_opps, cannibal_issues, _)
 st.divider()
 
-kpis.render(stats, deltas, _)
-trend.render(chart, prev_chart if has_prev else None,
-             query_movers if has_prev else None,
-             page_movers  if has_prev else None, _)
-findings.render(stats, queries, _)
-opportunities.render(queries, stats, _)
-cannibalization.render(cannibal_df, cannibal_issues, _)
-intent.render(stats.intent_summary, stats.comm_imp_pct, _)
-pages.render(pages_df, _)
-positions.render(stats.queries_ranked, queries, length_summary, snippet_opps, _)
-devices.render(devices_df, stats.mobile_pos, stats.desktop_pos, _)
-geo.render(countries_df, stats.top_country, _)
-hotjar.render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _)
+tab_overview, tab_traffic, tab_pages, tab_audience, tab_behavioral, tab_competitors, tab_report = st.tabs([
+    _("📈 Overview"),
+    _("🔍 Traffic"),
+    _("📄 Pages & Keywords"),
+    _("👥 Audience"),
+    _("🖱️ Behavioral"),
+    _("⚔️ Competitors"),
+    _("📋 Report"),
+])
 
-recs = recommendations.render(stats, cannibal_issues, countries_df, _)
-export.render(stats.top_opps, recs, queries, _)
+with tab_overview:
+    kpis.render(stats, deltas, _)
+    trend.render(chart, prev_chart if has_prev else None,
+                 query_movers if has_prev else None,
+                 page_movers  if has_prev else None, _)
+    if has_prev:
+        decay.render(page_movers, _)
+
+with tab_traffic:
+    findings.render(stats, queries, _)
+    opportunities.render(queries, stats, _)
+    intent.render(stats.intent_summary, stats.comm_imp_pct, _)
+
+with tab_pages:
+    pages.render(pages_df, _)
+    positions.render(stats.queries_ranked, queries, length_summary, snippet_opps, _)
+    cannibalization.render(cannibal_df, cannibal_issues, _)
+
+with tab_audience:
+    devices.render(devices_df, stats.mobile_pos, stats.desktop_pos, _)
+    geo.render(countries_df, stats.top_country, _)
+
+with tab_behavioral:
+    hotjar.render(f_hotjar, f_hm_home, f_hm_product, f_hm_cart, _)
+
+with tab_competitors:
+    competitor.render(competitor_urls_raw, _)
+
+with tab_report:
+    recs = recommendations.render(stats, cannibal_issues, countries_df, _)
+    export.render(stats.top_opps, recs, queries, _)
 
 st.divider()
 st.markdown(

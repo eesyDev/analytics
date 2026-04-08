@@ -10,35 +10,46 @@ CSS = """
 }
 
 .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+
+/* ── Alert boxes — light mode ───────────────────────────────────────────── */
 .alert-red {
     background: #fdecea; border-left: 4px solid #d32f2f;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #7f1d1d;
 }
 .alert-amber {
     background: #fff8e1; border-left: 4px solid #f9a825;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #78350f;
 }
 .alert-green {
     background: #e8f5e9; border-left: 4px solid #388e3c;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #14532d;
 }
 .alert-blue {
     background: #e3f2fd; border-left: 4px solid #1565c0;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #1e3a8a;
 }
+
+/* ── Alert boxes — dark mode ────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+    .alert-red   { background: rgba(211,47,47,0.15);  color: #fca5a5; }
+    .alert-amber { background: rgba(249,168,37,0.15); color: #fcd34d; }
+    .alert-green { background: rgba(56,142,60,0.15);  color: #86efac; }
+    .alert-blue  { background: rgba(21,101,192,0.15); color: #93c5fd; }
+}
+
 .section-header {
-    font-size: 1.1rem; font-weight: 600; color: #1a1a1a;
+    font-size: 1.1rem; font-weight: 600;
     margin-top: 2rem; margin-bottom: 0.5rem;
     border-bottom: 2px solid #1565c0; padding-bottom: 0.3rem;
 }
 .hotjar-placeholder {
-    background: #f5f5f5; border: 2px dashed #bbb;
+    border: 2px dashed #bbb;
     border-radius: 10px; padding: 2rem;
-    text-align: center; color: #888; margin-top: 0.5rem;
+    text-align: center; margin-top: 0.5rem;
 }
 </style>
 """

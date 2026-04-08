@@ -26,12 +26,34 @@ def tag_page(url: str, blog_kws: list) -> str:
 
 # ── CTR benchmark ─────────────────────────────────────────────────────────────
 
-def expected_ctr(pos, intent: str = "") -> float:
+def build_custom_ctr_curve(queries: pd.DataFrame) -> dict:
+    if len(queries) < 100:
+        return {} # Not enough data
+    
+    queries = queries.copy()
+    queries["Pos_Round"] = queries["Position"].round().astype(int)
+    
+    curve = {}
+    for intent, group in queries.groupby("Intent"):
+        if len(group) < 30: # Need at least 30 queries to form a curve for this intent
+            continue
+        intent_curve = group.groupby("Pos_Round")["CTR"].median().to_dict()
+        curve[intent] = intent_curve
+        
+    return curve
+
+
+def expected_ctr(pos, intent: str = "", custom_ctr: dict = None) -> float:
     try:
         p = max(1, int(round(float(pos))))
     except (ValueError, TypeError):
         return 0.3
         
+    if custom_ctr and intent in custom_ctr and p in custom_ctr[intent]:
+        val = custom_ctr[intent][p]
+        if not pd.isna(val):
+            return float(val)
+            
     if intent == "Brand":
         bench = CTR_BENCH_BRAND
     elif intent == "Commercial / Product":
@@ -40,7 +62,7 @@ def expected_ctr(pos, intent: str = "") -> float:
         bench = CTR_BENCH_INFO
 
     if p <= 10:
-        return bench[p]
+        return bench.get(p, 2.0)
     if p <= 20:
         return 1.5 if intent == "Brand" else (0.8 if intent == "Commercial / Product" else 1.0)
     return 0.5 if intent == "Brand" else (0.2 if intent == "Commercial / Product" else 0.3)
@@ -50,8 +72,9 @@ def expected_ctr(pos, intent: str = "") -> float:
 
 def compute_opportunity(queries: pd.DataFrame) -> pd.DataFrame:
     queries = queries.copy()
+    custom_ctr = build_custom_ctr_curve(queries)
     queries["Expected CTR"] = queries.apply(
-        lambda r: expected_ctr(r["Position"], r["Intent"]), axis=1
+        lambda r: expected_ctr(r["Position"], r["Intent"], custom_ctr), axis=1
     )
     queries["CTR Gap"] = (queries["Expected CTR"] - queries["CTR"]).round(2)
     queries["Opportunity Score"] = (
