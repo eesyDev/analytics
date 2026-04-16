@@ -202,6 +202,45 @@ def compute_stats(queries, pages, chart, devices, countries) -> Stats:
     )
 
 
+# ── Page-level click opportunity ─────────────────────────────────────────────
+
+def compute_page_opportunity(pages_df: pd.DataFrame) -> pd.DataFrame:
+    """Estimate clicks left on the table per page if position moved to top 3 / top 1."""
+    required = {"Page", "Position", "Impressions", "Clicks", "CTR"}
+    if not required.issubset(pages_df.columns):
+        return pd.DataFrame()
+
+    df = pages_df[pages_df["Position"] > 3].copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    df["CTR_top3"] = df["Position"].apply(lambda p: expected_ctr(p, "Commercial / Product"))
+    df["CTR_top1"] = df["Position"].apply(lambda _: expected_ctr(1, "Commercial / Product"))
+
+    df["Clicks_top3"] = (df["Impressions"] * df["CTR_top3"] / 100).round(0)
+    df["Clicks_top1"] = (df["Impressions"] * df["CTR_top1"] / 100).round(0)
+
+    df["Gain_top3"] = (df["Clicks_top3"] - df["Clicks"]).clip(lower=0).round(0)
+    df["Gain_top1"] = (df["Clicks_top1"] - df["Clicks"]).clip(lower=0).round(0)
+
+    # Revenue impact if GA4 data present
+    if "Revenue" in df.columns and "Sessions" in df.columns:
+        rev_per_session = df["Revenue"].sum() / df["Sessions"].replace(0, pd.NA).sum()
+        sessions_per_click = (df["Sessions"] / df["Clicks"].replace(0, pd.NA)).median()
+        if pd.notna(rev_per_session) and pd.notna(sessions_per_click):
+            df["Rev_Gain_top3"] = (df["Gain_top3"] * sessions_per_click * rev_per_session).round(0)
+        else:
+            df["Rev_Gain_top3"] = None
+    else:
+        df["Rev_Gain_top3"] = None
+
+    return (
+        df[df["Gain_top3"] > 0]
+        .sort_values("Gain_top3", ascending=False)
+        .reset_index(drop=True)
+    )
+
+
 # ── Query length & snippet opportunities ─────────────────────────────────────
 
 def compute_length(queries: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
