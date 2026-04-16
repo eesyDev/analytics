@@ -26,12 +26,34 @@ def tag_page(url: str, blog_kws: list) -> str:
 
 # ── CTR benchmark ─────────────────────────────────────────────────────────────
 
-def expected_ctr(pos, intent: str = "") -> float:
+def build_custom_ctr_curve(queries: pd.DataFrame) -> dict:
+    if len(queries) < 100:
+        return {} # Not enough data
+    
+    queries = queries.copy()
+    queries["Pos_Round"] = queries["Position"].round().astype(int)
+    
+    curve = {}
+    for intent, group in queries.groupby("Intent"):
+        if len(group) < 30: # Need at least 30 queries to form a curve for this intent
+            continue
+        intent_curve = group.groupby("Pos_Round")["CTR"].median().to_dict()
+        curve[intent] = intent_curve
+        
+    return curve
+
+
+def expected_ctr(pos, intent: str = "", custom_ctr: dict = None) -> float:
     try:
         p = max(1, int(round(float(pos))))
     except (ValueError, TypeError):
         return 0.3
         
+    if custom_ctr and intent in custom_ctr and p in custom_ctr[intent]:
+        val = custom_ctr[intent][p]
+        if not pd.isna(val):
+            return float(val)
+            
     if intent == "Brand":
         bench = CTR_BENCH_BRAND
     elif intent == "Commercial / Product":
@@ -40,7 +62,7 @@ def expected_ctr(pos, intent: str = "") -> float:
         bench = CTR_BENCH_INFO
 
     if p <= 10:
-        return bench[p]
+        return bench.get(p, 2.0)
     if p <= 20:
         return 1.5 if intent == "Brand" else (0.8 if intent == "Commercial / Product" else 1.0)
     return 0.5 if intent == "Brand" else (0.2 if intent == "Commercial / Product" else 0.3)
@@ -50,8 +72,9 @@ def expected_ctr(pos, intent: str = "") -> float:
 
 def compute_opportunity(queries: pd.DataFrame) -> pd.DataFrame:
     queries = queries.copy()
+    custom_ctr = build_custom_ctr_curve(queries)
     queries["Expected CTR"] = queries.apply(
-        lambda r: expected_ctr(r["Position"], r["Intent"]), axis=1
+        lambda r: expected_ctr(r["Position"], r["Intent"], custom_ctr), axis=1
     )
     queries["CTR Gap"] = (queries["Expected CTR"] - queries["CTR"]).round(2)
     queries["Opportunity Score"] = (
@@ -176,6 +199,45 @@ def compute_stats(queries, pages, chart, devices, countries) -> Stats:
         intent_summary=intent_summary,
         queries_ranked=queries_ranked,
         top_opps=top_opps,
+    )
+
+
+# ── Page-level click opportunity ─────────────────────────────────────────────
+
+def compute_page_opportunity(pages_df: pd.DataFrame) -> pd.DataFrame:
+    """Estimate clicks left on the table per page if position moved to top 3 / top 1."""
+    required = {"Page", "Position", "Impressions", "Clicks", "CTR"}
+    if not required.issubset(pages_df.columns):
+        return pd.DataFrame()
+
+    df = pages_df[pages_df["Position"] > 3].copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    df["CTR_top3"] = df["Position"].apply(lambda p: expected_ctr(p, "Commercial / Product"))
+    df["CTR_top1"] = df["Position"].apply(lambda _: expected_ctr(1, "Commercial / Product"))
+
+    df["Clicks_top3"] = (df["Impressions"] * df["CTR_top3"] / 100).round(0)
+    df["Clicks_top1"] = (df["Impressions"] * df["CTR_top1"] / 100).round(0)
+
+    df["Gain_top3"] = (df["Clicks_top3"] - df["Clicks"]).clip(lower=0).round(0)
+    df["Gain_top1"] = (df["Clicks_top1"] - df["Clicks"]).clip(lower=0).round(0)
+
+    # Revenue impact if GA4 data present
+    if "Revenue" in df.columns and "Sessions" in df.columns:
+        rev_per_session = df["Revenue"].sum() / df["Sessions"].replace(0, pd.NA).sum()
+        sessions_per_click = (df["Sessions"] / df["Clicks"].replace(0, pd.NA)).median()
+        if pd.notna(rev_per_session) and pd.notna(sessions_per_click):
+            df["Rev_Gain_top3"] = (df["Gain_top3"] * sessions_per_click * rev_per_session).round(0)
+        else:
+            df["Rev_Gain_top3"] = None
+    else:
+        df["Rev_Gain_top3"] = None
+
+    return (
+        df[df["Gain_top3"] > 0]
+        .sort_values("Gain_top3", ascending=False)
+        .reset_index(drop=True)
     )
 
 

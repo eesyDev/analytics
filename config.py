@@ -1,44 +1,159 @@
 CSS = """
 <style>
-/* Move sidebar to the right */
-.stApp {
-    flex-direction: row-reverse;
-}
-[data-testid="stSidebarCollapsedControl"] {
-    right: 0.5rem;
-    left: unset;
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 3rem;
+    max-width: 1200px;
 }
 
-.block-container { padding-top: 2rem; padding-bottom: 2rem; }
+/* ── Sidebar branding ────────────────────────────────────────────────────── */
+.sidebar-logo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1565c0;
+    letter-spacing: -0.3px;
+    margin-bottom: 0;
+}
+.sidebar-tagline {
+    font-size: 0.72rem;
+    color: #888;
+    margin-top: 0;
+}
+.sidebar-user {
+    font-size: 0.82rem;
+    color: #555;
+    padding: 6px 0;
+}
+
+/* ── Sidebar nav radio → looks like a menu ──────────────────────────────── */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+    gap: 1px !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label {
+    padding: 0.48rem 0.9rem !important;
+    border-radius: 7px !important;
+    border-left: 3px solid transparent !important;
+    cursor: pointer !important;
+    font-size: 0.88rem !important;
+    transition: background 0.12s, border-color 0.12s !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {
+    background: rgba(21,101,192,0.07) !important;
+    border-left-color: #90caf9 !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-checked="true"],
+section[data-testid="stSidebar"] div[data-testid="stRadio"] label[aria-checked="true"] {
+    background: rgba(21,101,192,0.12) !important;
+    border-left-color: #1565c0 !important;
+    font-weight: 600 !important;
+    color: #1565c0 !important;
+}
+/* Hide radio dots */
+section[data-testid="stSidebar"] div[data-testid="stRadio"] input[type="radio"] {
+    display: none !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
+    margin: 0 !important;
+}
+/* Sidebar section label */
+.nav-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #aaa;
+    margin: 0.75rem 0 0.3rem 0.5rem;
+}
+
+/* ── Upload cards ────────────────────────────────────────────────────────── */
+.upload-card {
+    border: 1.5px solid #e8eaf0;
+    border-radius: 10px;
+    padding: 1.1rem 1.3rem 0.8rem;
+    background: #f8f9fc;
+    margin-bottom: 0.5rem;
+}
+.upload-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1565c0;
+    margin-bottom: 0.25rem;
+}
+.upload-card-hint {
+    font-size: 0.78rem;
+    color: #888;
+    margin-bottom: 0.6rem;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+.page-header {
+    border-bottom: 2px solid #e8eaf0;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+.page-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.page-header .meta {
+    font-size: 0.83rem;
+    color: #888;
+    margin-top: 0.2rem;
+}
+
+/* ── Section header ──────────────────────────────────────────────────────── */
+.section-header {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-top: 1.75rem;
+    margin-bottom: 0.6rem;
+    border-bottom: 2px solid #1565c0;
+    padding-bottom: 0.35rem;
+    color: #1a1a2e;
+}
+
+/* ── Alert boxes — light mode ────────────────────────────────────────────── */
 .alert-red {
     background: #fdecea; border-left: 4px solid #d32f2f;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #7f1d1d;
 }
 .alert-amber {
     background: #fff8e1; border-left: 4px solid #f9a825;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #78350f;
 }
 .alert-green {
     background: #e8f5e9; border-left: 4px solid #388e3c;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #14532d;
 }
 .alert-blue {
     background: #e3f2fd; border-left: 4px solid #1565c0;
     border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem;
+    margin-bottom: 0.6rem; font-size: 0.92rem; color: #1e3a8a;
 }
-.section-header {
-    font-size: 1.1rem; font-weight: 600; color: #1a1a1a;
-    margin-top: 2rem; margin-bottom: 0.5rem;
-    border-bottom: 2px solid #1565c0; padding-bottom: 0.3rem;
+
+/* ── Alert boxes — dark mode ─────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+    .upload-card  { background: #1e2433; border-color: #2e3450; }
+    .upload-card-title { color: #90caf9; }
+    .page-header h2 { color: #e0e0e0; }
+    .page-header .meta { color: #888; }
+    .section-header { color: #e0e0e0; }
+    .alert-red   { background: rgba(211,47,47,0.15);  color: #fca5a5; }
+    .alert-amber { background: rgba(249,168,37,0.15); color: #fcd34d; }
+    .alert-green { background: rgba(56,142,60,0.15);  color: #86efac; }
+    .alert-blue  { background: rgba(21,101,192,0.15); color: #93c5fd; }
 }
+
 .hotjar-placeholder {
-    background: #f5f5f5; border: 2px dashed #bbb;
+    border: 2px dashed #bbb;
     border-radius: 10px; padding: 2rem;
-    text-align: center; color: #888; margin-top: 0.5rem;
+    text-align: center; margin-top: 0.5rem;
 }
 </style>
 """

@@ -108,3 +108,56 @@ def scrape_page(url: str, timeout: int = 12) -> dict:
         result["Error"] = str(e)[:80]
 
     return result
+
+
+def scrape_content_deep(url: str, timeout: int = 15) -> dict:
+    """Extended scrape for AI content analysis — returns heading tree + full body text."""
+    result = {
+        "url": url,
+        "title": "",
+        "meta_desc": "",
+        "headings": [],      # list of (level_str, text), e.g. [("H1", "..."), ("H2", "...")]
+        "body_text": "",
+        "word_count": 0,
+        "paragraph_count": 0,
+        "error": None,
+    }
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=timeout, allow_redirects=True)
+        result_status = r.status_code
+        if result_status != 200:
+            result["error"] = f"HTTP {result_status}"
+            return result
+
+        soup = BeautifulSoup(r.content, "lxml")
+
+        title_tag = soup.find("title")
+        if title_tag:
+            result["title"] = title_tag.get_text(strip=True)
+
+        meta = soup.find("meta", {"name": re.compile(r"^description$", re.I)})
+        if meta and meta.get("content"):
+            result["meta_desc"] = meta["content"].strip()
+
+        for tag in soup.find_all(["h1", "h2", "h3", "h4"]):
+            text = tag.get_text(strip=True)[:150]
+            if text:
+                result["headings"].append((tag.name.upper(), text))
+
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside", "iframe"]):
+            tag.decompose()
+
+        body = soup.find("body")
+        if body:
+            result["paragraph_count"] = len(body.find_all("p"))
+            result["body_text"] = body.get_text(separator="\n", strip=True)
+            result["word_count"] = len(result["body_text"].split())
+
+    except requests.exceptions.Timeout:
+        result["error"] = "Timeout"
+    except requests.exceptions.ConnectionError:
+        result["error"] = "Connection error"
+    except Exception as e:
+        result["error"] = str(e)[:80]
+
+    return result
