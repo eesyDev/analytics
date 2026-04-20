@@ -1,159 +1,244 @@
 CSS = """
 <style>
-/* ── Layout ─────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+html, body, [class*="css"] {
+    font-family: 'Sora', system-ui, sans-serif !important;
+}
 .block-container {
-    padding-top: 1.5rem;
-    padding-bottom: 3rem;
-    max-width: 1200px;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+    max-width: 1280px;
 }
 
-/* ── Sidebar branding ────────────────────────────────────────────────────── */
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+section[data-testid="stSidebar"] {
+    background: #0a0a0d !important;
+    border-right: 1px solid #1e1e24 !important;
+}
 .sidebar-logo {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #1565c0;
-    letter-spacing: -0.3px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.5px;
     margin-bottom: 0;
 }
 .sidebar-tagline {
-    font-size: 0.72rem;
-    color: #888;
-    margin-top: 0;
+    font-size: 0.7rem;
+    color: #444;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
 }
 .sidebar-user {
-    font-size: 0.82rem;
-    color: #555;
-    padding: 6px 0;
+    font-size: 0.78rem;
+    color: #666;
+    padding: 4px 0;
 }
 
-/* ── Sidebar nav radio → looks like a menu ──────────────────────────────── */
+/* ── Sidebar nav ─────────────────────────────────────────────────────────── */
+.nav-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #333;
+    margin: 1rem 0 0.4rem 0.2rem;
+}
 section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
-    gap: 1px !important;
+    gap: 2px !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stRadio"] label {
-    padding: 0.48rem 0.9rem !important;
-    border-radius: 7px !important;
-    border-left: 3px solid transparent !important;
+    padding: 0.5rem 0.8rem !important;
+    border-radius: 6px !important;
+    border-left: 2px solid transparent !important;
     cursor: pointer !important;
-    font-size: 0.88rem !important;
-    transition: background 0.12s, border-color 0.12s !important;
+    font-size: 0.84rem !important;
+    font-weight: 500 !important;
+    color: #888 !important;
+    transition: all 0.1s !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {
-    background: rgba(21,101,192,0.07) !important;
-    border-left-color: #90caf9 !important;
+    background: rgba(37,99,235,0.08) !important;
+    color: #ccc !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stRadio"] label[data-checked="true"],
 section[data-testid="stSidebar"] div[data-testid="stRadio"] label[aria-checked="true"] {
-    background: rgba(21,101,192,0.12) !important;
-    border-left-color: #1565c0 !important;
+    background: rgba(37,99,235,0.12) !important;
+    border-left-color: #2563eb !important;
+    color: #ffffff !important;
     font-weight: 600 !important;
-    color: #1565c0 !important;
 }
-/* Hide radio dots */
 section[data-testid="stSidebar"] div[data-testid="stRadio"] input[type="radio"] {
     display: none !important;
 }
 section[data-testid="stSidebar"] div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
     margin: 0 !important;
 }
-/* Sidebar section label */
-.nav-label {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    color: #aaa;
-    margin: 0.75rem 0 0.3rem 0.5rem;
-}
-
-/* ── Upload cards ────────────────────────────────────────────────────────── */
-.upload-card {
-    border: 1.5px solid #e8eaf0;
-    border-radius: 10px;
-    padding: 1.1rem 1.3rem 0.8rem;
-    background: #f8f9fc;
-    margin-bottom: 0.5rem;
-}
-.upload-card-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #1565c0;
-    margin-bottom: 0.25rem;
-}
-.upload-card-hint {
-    font-size: 0.78rem;
-    color: #888;
-    margin-bottom: 0.6rem;
-}
 
 /* ── Page header ─────────────────────────────────────────────────────────── */
 .page-header {
-    border-bottom: 2px solid #e8eaf0;
-    padding-bottom: 0.75rem;
-    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #1e1e24;
 }
 .page-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1a1a2e;
+    margin: 0 0 0.3rem 0;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.8px;
+    line-height: 1.15;
+}
+.page-header h2 span.accent {
+    color: #2563eb;
 }
 .page-header .meta {
-    font-size: 0.83rem;
-    color: #888;
-    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    color: #444;
+    margin-top: 0.25rem;
+    letter-spacing: 0.2px;
 }
 
 /* ── Section header ──────────────────────────────────────────────────────── */
 .section-header {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin-top: 1.75rem;
-    margin-bottom: 0.6rem;
-    border-bottom: 2px solid #1565c0;
-    padding-bottom: 0.35rem;
-    color: #1a1a2e;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.section-header::after {
+    content: "";
+    display: block;
+    height: 2px;
+    flex: 1;
+    background: linear-gradient(90deg, #2563eb 0%, transparent 100%);
+    border-radius: 2px;
+    margin-left: 0.75rem;
 }
 
-/* ── Alert boxes — light mode ────────────────────────────────────────────── */
+/* ── Upload cards ────────────────────────────────────────────────────────── */
+.upload-card {
+    border: 1px solid #1e1e24;
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem 1rem;
+    background: #111116;
+    margin-bottom: 0.75rem;
+}
+.upload-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.2rem;
+    letter-spacing: -0.2px;
+}
+.upload-card-hint {
+    font-size: 0.74rem;
+    color: #444;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+/* ── Alert boxes ──────────────────────────────────────────────────────────── */
 .alert-red {
-    background: #fdecea; border-left: 4px solid #d32f2f;
-    border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem; color: #7f1d1d;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.88rem;
+    color: #fca5a5;
+    line-height: 1.5;
 }
 .alert-amber {
-    background: #fff8e1; border-left: 4px solid #f9a825;
-    border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem; color: #78350f;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.88rem;
+    color: #fcd34d;
+    line-height: 1.5;
 }
 .alert-green {
-    background: #e8f5e9; border-left: 4px solid #388e3c;
-    border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem; color: #14532d;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.88rem;
+    color: #86efac;
+    line-height: 1.5;
 }
 .alert-blue {
-    background: #e3f2fd; border-left: 4px solid #1565c0;
-    border-radius: 6px; padding: 0.8rem 1rem;
-    margin-bottom: 0.6rem; font-size: 0.92rem; color: #1e3a8a;
+    background: rgba(37,99,235,0.08);
+    border: 1px solid rgba(37,99,235,0.25);
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.88rem;
+    color: #93c5fd;
+    line-height: 1.5;
 }
 
-/* ── Alert boxes — dark mode ─────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-    .upload-card  { background: #1e2433; border-color: #2e3450; }
-    .upload-card-title { color: #90caf9; }
-    .page-header h2 { color: #e0e0e0; }
-    .page-header .meta { color: #888; }
-    .section-header { color: #e0e0e0; }
-    .alert-red   { background: rgba(211,47,47,0.15);  color: #fca5a5; }
-    .alert-amber { background: rgba(249,168,37,0.15); color: #fcd34d; }
-    .alert-green { background: rgba(56,142,60,0.15);  color: #86efac; }
-    .alert-blue  { background: rgba(21,101,192,0.15); color: #93c5fd; }
+/* ── Stat card — for big numbers ─────────────────────────────────────────── */
+.stat-card {
+    background: #111116;
+    border: 1px solid #1e1e24;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 0.5rem;
 }
+.stat-card .stat-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+}
+.stat-card .stat-value.accent { color: #2563eb; }
+.stat-card .stat-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #444;
+}
+.stat-card .stat-delta {
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-top: 0.4rem;
+}
+.stat-card .stat-delta.up   { color: #4ade80; }
+.stat-card .stat-delta.down { color: #f87171; }
 
+/* ── Hotjar placeholder ───────────────────────────────────────────────────── */
 .hotjar-placeholder {
-    border: 2px dashed #bbb;
-    border-radius: 10px; padding: 2rem;
-    text-align: center; margin-top: 0.5rem;
+    border: 1px dashed #222;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    margin-top: 0.5rem;
+    color: #444;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+button[data-baseweb="tab"] {
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.1px !important;
+}
+
+/* ── Dataframe tweaks ────────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border-radius: 10px;
+    overflow: hidden;
 }
 </style>
 """

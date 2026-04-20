@@ -31,6 +31,11 @@ def load_current(uploads: dict) -> tuple:
 
     queries.rename(columns={"Top queries": "Query"}, inplace=True, errors="ignore")
     pages.rename(columns={"Top pages":    "Page"},   inplace=True, errors="ignore")
+    date_col = next((c for c in chart.columns if c.strip().lower() in ("date", "дата", "day")), None)
+    if date_col and date_col != "Date":
+        chart.rename(columns={date_col: "Date"}, inplace=True)
+    elif "Date" not in chart.columns:
+        chart["Date"] = pd.NaT
     chart["Date"] = pd.to_datetime(chart["Date"], errors="coerce")
 
     return queries, pages, devices, countries, chart
@@ -49,6 +54,11 @@ def load_previous(uploads: dict) -> tuple:
             prev_pages.rename(columns={"Top pages": "Page"}, inplace=True, errors="ignore")
         if uploads.get("chart"):
             prev_chart = clean_df(pd.read_csv(uploads["chart"]))
+            date_col = next((c for c in prev_chart.columns if c.strip().lower() in ("date", "дата", "day")), None)
+            if date_col and date_col != "Date":
+                prev_chart.rename(columns={date_col: "Date"}, inplace=True)
+            elif "Date" not in prev_chart.columns:
+                prev_chart["Date"] = pd.NaT
             prev_chart["Date"] = pd.to_datetime(prev_chart["Date"], errors="coerce")
     except Exception as e:
         st.sidebar.warning(f"Previous period load error: {e}")

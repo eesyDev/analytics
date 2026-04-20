@@ -1,7 +1,10 @@
 import io
 import time
 import streamlit as st
+import plotly.io as pio
 import config
+
+pio.templates.default = "plotly_dark"
 from data_loader import load_current, load_previous, load_cannibal, load_ga4
 from analysis import (
     classify_intent, tag_page, compute_opportunity,
@@ -10,7 +13,7 @@ from analysis import (
 )
 from sections import tldr, kpis, trend, findings, opportunities
 from sections import cannibalization, intent, pages, positions, devices, geo, hotjar, decay
-from sections import recommendations, export, competitor, ai_summary, content_auditor
+from sections import recommendations, export, competitor, ai_summary, content_auditor, keyword_intelligence, page_advisor
 from i18n import get_text
 import i18n
 import db
@@ -66,6 +69,8 @@ with st.sidebar:
             "📈  Overview",
             "🔍  Traffic",
             "📄  Pages & Keywords",
+            "🎯  Keyword Intel",
+            "📋  Page Advisor",
             "👥  Audience",
             "🖱️  Behavioral",
             "⚔️  Competitors",
@@ -262,8 +267,8 @@ page_opp        = compute_page_opportunity(pages_df)
 
 # Shared page header
 st.markdown(
-    f'<div class="page-header"><h2>📊 {client_name} — SEO Performance Audit</h2>'
-    f'<p class="meta">Period: {stats.date_range} &nbsp;·&nbsp; Source: Google Search Console &nbsp;·&nbsp; {len(queries):,} queries analyzed</p></div>',
+    f'<div class="page-header"><h2>{client_name} — <span class="accent">SEO Audit</span></h2>'
+    f'<p class="meta">{stats.date_range} &nbsp;·&nbsp; Google Search Console &nbsp;·&nbsp; {len(queries):,} queries</p></div>',
     unsafe_allow_html=True,
 )
 
@@ -298,6 +303,12 @@ elif page == "📄  Pages & Keywords":
     pages.render(pages_df, _)
     positions.render(stats.queries_ranked, queries, length_summary, snippet_opps, _)
     cannibalization.render(cannibal_df, cannibal_issues, _)
+
+elif page == "🎯  Keyword Intel":
+    keyword_intelligence.render(queries, _)
+
+elif page == "📋  Page Advisor":
+    page_advisor.render(cannibal_df, _)
 
 elif page == "👥  Audience":
     devices.render(devices_df, stats.mobile_pos, stats.desktop_pos, _)
